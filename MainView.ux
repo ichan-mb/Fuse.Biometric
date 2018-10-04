@@ -1,0 +1,64 @@
+<App>
+	<JavaScript>
+		var Observable = require('FuseJS/Observable');
+
+		var status = Observable("-");
+		var state = Observable(false);		
+		var finger = require('FingerPrint');
+		var timeoutVar;
+
+		var startFingerprint = function() {			
+			status.value = "-";
+				
+			if (!state.value) {
+				state.value = true;
+				if (finger.isSupported()) {
+					finger.auth(function (success, reason) { 
+						if (typeof timeoutVar !== 'undefined')
+							clearTimeout(timeoutVar);
+						status.value = reason;	
+						state.value = false;							
+						timeoutVar = setTimeout(function () {
+							status.value = "-"
+						}, 5000);
+					}, "We need your fingerprint");
+				}else {
+					status.value = "fingerprint not supported"
+					state.value = false;
+				}
+			}else {
+				if (finger.isSupported())
+					finger.stop();
+				state.value = false;				
+			}
+		}
+
+		module.exports = {
+			status: status,
+			startFingerprint: startFingerprint,
+			state : state
+		};
+
+	</JavaScript>
+	<DockPanel>
+		<SafeEdgePanel Dock="Top" ExtraPadding="10" />		
+		<Text Value="Status : {status}" Alignment="TopCenter"/>
+		<Panel ux:Name="btn" Width="250" Height="40" Color="Blue" HitTestMode="LocalBounds">
+			<Text ux:Name="btnText" Value="Start Finger test" Color="White" Alignment="Center" />
+			<WhileFalse Value="{state}">
+				<Change btnText.Value="Start Finger test" />
+				<Change btn.Color="Blue" />				
+			</WhileFalse>
+			<WhileTrue Value="{state}">
+				<Change btnText.Value="Touch Fingerprint sensor" />
+				<Change btn.Color="Red" />
+			</WhileTrue>
+			<Clicked>
+				<Callback Handler="{startFingerprint}" />
+			</Clicked>
+			<WhilePressed>
+				<Change btn.Color="Yellow" />
+			</WhilePressed>
+		</Panel>
+	</DockPanel>
+</App>
